@@ -1,52 +1,33 @@
-import mongoose from "mongoose";
-import { DB_NAME } from "./constant" ;
 import dotenv from "dotenv";
+import app from "./app.js";
 import connectDB from "./db/index.js";
 
-dotenv.config({
-    path: './env'
-})
+dotenv.config();
 
-connectDB()
+const port = Number.parseInt(process.env.PORT ?? "8000", 10);
 
+if (Number.isNaN(port)) {
+  throw new Error("PORT must be a valid number.");
+}
 
+const server = app.listen(port, () => {
+  console.log(`Server is listening on port ${port}`);
+});
 
+server.on("error", (error) => {
+  console.error("Server failed to start:", error);
+  process.exit(1);
+});
 
+const startDatabase = async () => {
+  try {
+    await connectDB();
+  } catch (error) {
+    console.error("Startup failed:", error);
+    server.close(() => {
+      process.exit(1);
+    });
+  }
+};
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import express from "express";
-// const app = express()
-
-// (async()=>{
-//     try {
-//         await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`)
-//         app.on("error", ()=>{
-//             console.log(`ERROR: `, error);
-//             throw error;     
-//         })
-
-//         app.listen(process.env.PORT,()=>{
-//             console.log(`app is listening on port ${process.env.PORT}`);  
-//         })
-//     } catch (error) {
-//         console.error("ERROR: ",error)
-//         throw error
-//     }
-// })()
+startDatabase();
