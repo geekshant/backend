@@ -16,7 +16,7 @@ const registerUser = asyncHandler(async (req, res) => {
   // return response
 
   const { fullName, email, username, password } = req.body;
-  console.log(email);
+  // console.log(email);
 
   if (
     [fullName, email, username, password].some((field) => {
@@ -25,7 +25,7 @@ const registerUser = asyncHandler(async (req, res) => {
   ) {
     throw new ApiError(400, "all fields are required");
   }
-  const existedUser = User.findOne({
+  const existedUser = await User.findOne({
     $or: [{ email }, { username }],
   });
 
@@ -33,8 +33,10 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(409, "you already have an account, want to login ?");
   }
 
-  const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalpath = req.files?.coverImage[0]?.path;
+  // console.log(req.files);
+  
+  const avatarLocalPath = req.files?.avatar?.[0]?.path;
+  const coverImageLocalpath = req.files?.coverImage?.[0]?.path;
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "avatar file is required");
@@ -53,14 +55,14 @@ const registerUser = asyncHandler(async (req, res) => {
     coverImage: coverImage?.url || "",
     email,
     password,
-    username: username.tolowercase(),
+    username: username.toLowerCase(),
   });
 
-  const createdUser = user.findById(user._id).select(
+  const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
   )
 
-  if(!createdUser){
+  if (!createdUser) {
     throw new ApiError(500, "soething went wrong while registering the user");
   }
 
