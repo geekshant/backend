@@ -6,7 +6,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
-    const user = await User.findOne(userId);
+    const user = await User.findById(userId);
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
     user.refreshToken = refreshToken;
@@ -32,12 +32,12 @@ const registerUser = asyncHandler(async (req, res) => {
   // check for user creation
   // return response
 
-  const { fullName, email, username, password } = req.body;
+  const { fullName, email, username, password } = req.body ?? {};
   // console.log(email);
 
   if (
     [fullName, email, username, password].some((field) => {
-      return field?.trim() === "";
+      return typeof field !== "string" || field.trim() === "";
     })
   ) {
     throw new ApiError(400, "all fields are required");
@@ -89,10 +89,10 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-  const { email, username, password } = req.body;
+  const { email, username, password } = req.body ?? {};
 
-  if (!username || !email) {
-    throw new ApiError(400, "username or password is required");
+  if ((!username && !email) || !password) {
+    throw new ApiError(400, "username or email and password are required");
   }
 
   const user = await User.findOne({ $or: [{ email }, { username }] });
@@ -122,13 +122,13 @@ const loginUser = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .cookie("accessToken", accessTokenk, options)
+    .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
     .json(
       new ApiResponse(
         200,
         {
-          user: loggedInuser,
+          user: loggedInUser,
           accessToken,
           refreshToken,
         },
@@ -138,7 +138,7 @@ const loginUser = asyncHandler(async (req, res) => {
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
-  User.findByIdAndUpdate(
+  await User.findByIdAndUpdate(
     req.user._id,
     {
       $set: {
